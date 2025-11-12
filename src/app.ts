@@ -5,11 +5,11 @@ import 'dotenv/config';
 
 
 (async() => {
-    main();
+    await main();
 })();
 
-function main(){
-    Server.start();
+async function main(){
+    await Server.start();
 
     // console.log(envs)
 }
