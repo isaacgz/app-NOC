@@ -1,0 +1,218 @@
+// ============================================================
+// Prisma Schema for NOC Monitoring System
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Service Model
+// ============================================================
+model Service {
+  id          String   @id @db.VarChar(255)
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  url         String   @db.VarChar(1024)
+  method      String   @default("http") @db.VarChar(50)
+  interval    String   @default("*/30 * * * * *") @db.VarChar(255)
+  critical    Boolean  @default(false)
+  enabled     Boolean  @default(true)
+  tags        String[]
+
+  // Health check configuration (JSONB)
+  healthCheck Json?
+
+  // Alert configuration (JSONB)
+  alertConfig Json?
+
+  // Status fields
+  lastCheckAt DateTime?
+  lastStatus  String?   @db.VarChar(50)
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  incidents   Incident[]
+  slos        SLO[]
+
+  @@map("services")
+}
+
+// ============================================================
+// Incident Model
+// ============================================================
+model Incident {
+  id                     String    @id @db.VarChar(255)
+  serviceId              String    @map("service_id") @db.VarChar(255)
+  serviceName            String    @map("service_name") @db.VarChar(255)
+  severity               Severity
+  status                 IncidentStatus
+  description            String    @db.Text
+  estimatedImpact        String?   @map("estimated_impact") @db.Text
+  affectedChecks         Int       @default(0) @map("affected_checks")
+
+  // Timeline (JSONB array of events)
+  timeline               Json      @default("[]")
+
+  // Metadata (JSONB)
+  metadata               Json?
+
+  // Resolution metrics
+  resolutionTimeMinutes  Int?      @map("resolution_time_minutes")
+
+  // Timestamps
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  resolvedAt             DateTime? @map("resolved_at")
+  closedAt               DateTime? @map("closed_at")
+
+  // Relations
+  service                Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+  @@index([status])
+  @@index([severity])
+  @@index([createdAt])
+  @@map("incidents")
+}
+
+// ============================================================
+// SLO Model
+// ============================================================
+model SLO {
+  id                String      @id @db.VarChar(255)
+  serviceId         String      @map("service_id") @db.VarChar(255)
+  name              String      @db.VarChar(255)
+  description       String?     @db.Text
+  target            Decimal     @db.Decimal(5, 2)
+  window            SLOWindow
+  sliType           SLIType     @map("sli_type")
+  threshold         Int?
+  enabled           Boolean     @default(true)
+
+  // Current SLO status (cache)
+  currentValue      Decimal?    @map("current_value") @db.Decimal(5, 2)
+  compliance        Boolean?
+  errorBudget       Decimal?    @map("error_budget") @db.Decimal(10, 2)
+  errorBudgetUsed   Decimal?    @map("error_budget_used") @db.Decimal(5, 2)
+  burnRate          Decimal?    @map("burn_rate") @db.Decimal(5, 2)
+  violationRisk     ViolationRisk? @map("violation_risk")
+  lastCalculatedAt  DateTime?   @map("last_calculated_at")
+
+  // Alert configuration (JSONB)
+  alertConfig       Json?       @map("alert_config")
+
+  // Timestamps
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  service           Service     @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+  @@index([enabled])
+  @@map("slos")
+}
+
+// ============================================================
+// SLO Status History Model
+// ============================================================
+model SLOStatusHistory {
+  id                   String        @id @default(uuid())
+  sloId                String        @map("slo_id") @db.VarChar(255)
+  sloName              String        @map("slo_name") @db.VarChar(255)
+  serviceId            String        @map("service_id") @db.VarChar(255)
+  serviceName          String        @map("service_name") @db.VarChar(255)
+  currentValue         Decimal       @map("current_value") @db.Decimal(5, 2)
+  target               Decimal       @db.Decimal(5, 2)
+  compliance           Boolean
+  errorBudget          Decimal       @map("error_budget") @db.Decimal(10, 2)
+  errorBudgetTotal     Decimal       @map("error_budget_total") @db.Decimal(10, 2)
+  errorBudgetUsed      Decimal       @map("error_budget_used") @db.Decimal(5, 2)
+  burnRate             Decimal       @map("burn_rate") @db.Decimal(5, 2)
+  violationRisk        ViolationRisk @map("violation_risk")
+  window               SLOWindow
+  sliType              SLIType       @map("sli_type")
+  calculatedAt         DateTime      @map("calculated_at") @default(now())
+
+  @@index([sloId])
+  @@index([calculatedAt])
+  @@map("slo_status_history")
+}
+
+// ============================================================
+// User Model (para futuro sistema de autenticación)
+// ============================================================
+model User {
+  id          String    @id @default(uuid())
+  email       String    @unique @db.VarChar(255)
+  name        String    @db.VarChar(255)
+  password    String    @db.VarChar(255)
+  role        UserRole  @default(VIEWER)
+  active      Boolean   @default(true)
+
+  // Preferences (JSONB)
+  preferences Json?
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  lastLoginAt DateTime? @map("last_login_at")
+
+  @@map("users")
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum IncidentStatus {
+  NEW
+  INVESTIGATING
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SLOWindow {
+  ONE_HOUR   @map("1h")
+  TWENTY_FOUR_HOURS @map("24h")
+  SEVEN_DAYS @map("7d")
+  THIRTY_DAYS @map("30d")
+  NINETY_DAYS @map("90d")
+}
+
+enum SLIType {
+  AVAILABILITY
+  LATENCY
+  ERROR_RATE
+}
+
+enum ViolationRisk {
+  NONE
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum UserRole {
+  ADMIN
+  OPERATOR
+  VIEWER
+}
