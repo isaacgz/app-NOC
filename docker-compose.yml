@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  # ============================================================
+  # PostgreSQL Database
+  # ============================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: noc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: noc_monitoring
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - noc-network
+
+  # ============================================================
+  # InfluxDB Time-Series Database
+  # ============================================================
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: noc-influxdb
+    restart: unless-stopped
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: admin123456
+      DOCKER_INFLUXDB_INIT_ORG: noc-monitoring
+      DOCKER_INFLUXDB_INIT_BUCKET: service-metrics
+      DOCKER_INFLUXDB_INIT_RETENTION: 30d
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: noc-monitoring-token-change-in-production
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - noc-network
+
+  # ============================================================
+  # NOC Backend Application (Node.js + TypeScript)
+  # ============================================================
+  noc-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: noc-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+
+      # PostgreSQL
+      DB_ENABLED: "true"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: noc_monitoring
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+
+      # InfluxDB
+      INFLUXDB_ENABLED: "true"
+      INFLUXDB_URL: http://influxdb:8086
+      INFLUXDB_TOKEN: noc-monitoring-token-change-in-production
+      INFLUXDB_ORG: noc-monitoring
+      INFLUXDB_BUCKET: service-metrics
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./config:/app/config
+    depends_on:
+      postgres:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/overview"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - noc-network
+
+  # ============================================================
+  # Grafana (Optional - para visualización avanzada)
+  # ============================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: noc-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_INSTALL_PLUGINS: grafana-clock-panel
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - influxdb
+    networks:
+      - noc-network
+
+volumes:
+  postgres-data:
+    name: noc-postgres-data
+  influxdb-data:
+    name: noc-influxdb-data
+  influxdb-config:
+    name: noc-influxdb-config
+  grafana-data:
+    name: noc-grafana-data
+
+networks:
+  noc-network:
+    name: noc-network
+    driver: bridge
