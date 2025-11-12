@@ -1,0 +1,263 @@
+{
+  "// FASE 4": "Sistema Completo con Múltiples Canales y Análisis Avanzado",
+
+  "global": {
+    "defaultTimeout": 5000,
+    "enableDetailedLogs": false,
+    "retryAttempts": 1,
+    "retryDelay": 1000
+  },
+
+  "// DETECCIÓN DE PATRONES": {
+    "enabled": true,
+    "analysisIntervalMinutes": 5,
+    "timeWindowMinutes": 30,
+    "confidenceThreshold": 70,
+    "enabledPatterns": [
+      "progressive_degradation",
+      "intermittent_failures",
+      "recurring_downtime"
+    ],
+    "autoNotify": true
+  },
+
+  "services": [
+    {
+      "// EJEMPLO COMPLETO": "Servicio con todos los canales de notificación",
+      "id": "api-production-full",
+      "name": "API Production (Full Features)",
+      "url": "https://api.example.com/health",
+      "interval": "*/30 * * * * *",
+      "critical": true,
+      "description": "API principal con todas las funcionalidades de Fase 4",
+      "tags": ["production", "critical", "api"],
+      "enabled": true,
+
+      "healthCheck": {
+        "method": "GET",
+        "timeout": 3000,
+        "expectedResponse": {
+          "statusCode": 200,
+          "bodyContains": "healthy",
+          "maxResponseTime": 500
+        }
+      },
+
+      "alerts": {
+        "enabled": true,
+        "notifyEmails": ["ops@example.com"],
+        "notifyOnRecovery": true,
+
+        "cooldown": {
+          "durationMinutes": 15,
+          "maxAlertsInPeriod": 3
+        },
+
+        "retry": {
+          "attempts": 3,
+          "delayMs": 5000
+        },
+
+        "escalation": {
+          "enabled": true,
+          "afterMinutes": 10,
+          "notifyTo": ["manager@example.com"]
+        },
+
+        "channels": {
+          "slack": {
+            "enabled": true,
+            "webhookUrl": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+          },
+          "discord": {
+            "enabled": true,
+            "webhookUrl": "https://discord.com/api/webhooks/YOUR/WEBHOOK"
+          },
+          "telegram": {
+            "enabled": false,
+            "botToken": "YOUR_BOT_TOKEN",
+            "chatId": "YOUR_CHAT_ID"
+          },
+          "teams": {
+            "enabled": false,
+            "webhookUrl": "https://outlook.office.com/webhook/YOUR/WEBHOOK"
+          },
+          "webhook": {
+            "enabled": false,
+            "url": "https://your-custom-webhook.com/alerts",
+            "method": "POST"
+          }
+        }
+      }
+    },
+
+    {
+      "// SLACK ONLY": "Servicio con notificaciones solo por Slack",
+      "id": "api-slack-only",
+      "name": "API (Slack Only)",
+      "url": "https://api2.example.com/health",
+      "interval": "*/45 * * * * *",
+      "critical": false,
+      "enabled": true,
+
+      "alerts": {
+        "enabled": true,
+        "notifyOnRecovery": true,
+        "retry": {
+          "attempts": 2,
+          "delayMs": 5000
+        },
+        "channels": {
+          "slack": {
+            "enabled": true,
+            "webhookUrl": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+          }
+        }
+      }
+    },
+
+    {
+      "// DISCORD ONLY": "Servicio con notificaciones solo por Discord",
+      "id": "database-discord",
+      "name": "Database (Discord Alerts)",
+      "url": "https://db.example.com/ping",
+      "interval": "*/30 * * * * *",
+      "critical": true,
+      "enabled": true,
+
+      "alerts": {
+        "enabled": true,
+        "notifyOnRecovery": true,
+        "cooldown": {
+          "durationMinutes": 10
+        },
+        "retry": {
+          "attempts": 3,
+          "delayMs": 3000
+        },
+        "channels": {
+          "discord": {
+            "enabled": true,
+            "webhookUrl": "https://discord.com/api/webhooks/YOUR/WEBHOOK"
+          }
+        }
+      }
+    },
+
+    {
+      "// TELEGRAM ONLY": "Servicio con notificaciones solo por Telegram",
+      "id": "payments-telegram",
+      "name": "Payment Gateway (Telegram)",
+      "url": "https://payments.example.com/health",
+      "interval": "*/15 * * * * *",
+      "critical": true,
+      "enabled": true,
+
+      "alerts": {
+        "enabled": true,
+        "notifyOnRecovery": true,
+        "escalation": {
+          "enabled": true,
+          "afterMinutes": 5,
+          "notifyTo": []
+        },
+        "channels": {
+          "telegram": {
+            "enabled": true,
+            "botToken": "YOUR_BOT_TOKEN",
+            "chatId": "YOUR_CHAT_ID"
+          }
+        }
+      }
+    },
+
+    {
+      "// WEBHOOK CUSTOM": "Servicio con webhook personalizado",
+      "id": "custom-webhook",
+      "name": "Custom Service (Webhook)",
+      "url": "https://custom.example.com/health",
+      "interval": "*/60 * * * * *",
+      "critical": false,
+      "enabled": true,
+
+      "alerts": {
+        "enabled": true,
+        "channels": {
+          "webhook": {
+            "enabled": true,
+            "url": "https://your-api.com/noc-alerts",
+            "method": "POST"
+          }
+        }
+      }
+    },
+
+    {
+      "// MÚLTIPLES CANALES": "Servicio con Slack + Discord + Email",
+      "id": "multi-channel",
+      "name": "Multi-Channel Service",
+      "url": "https://multi.example.com/health",
+      "interval": "*/20 * * * * *",
+      "critical": true,
+      "enabled": true,
+
+      "alerts": {
+        "enabled": true,
+        "notifyEmails": ["ops@example.com"],
+        "notifyOnRecovery": true,
+        "cooldown": {
+          "durationMinutes": 15
+        },
+        "channels": {
+          "slack": {
+            "enabled": true,
+            "webhookUrl": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+          },
+          "discord": {
+            "enabled": true,
+            "webhookUrl": "https://discord.com/api/webhooks/YOUR/WEBHOOK"
+          }
+        }
+      }
+    }
+  ],
+
+  "// CONFIGURACIÓN DE CANALES": {
+    "slack": {
+      "descripcion": "Webhook de Slack",
+      "obtener_webhook": "https://api.slack.com/messaging/webhooks",
+      "formato": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXX"
+    },
+    "discord": {
+      "descripcion": "Webhook de Discord",
+      "obtener_webhook": "Server Settings > Integrations > Webhooks",
+      "formato": "https://discord.com/api/webhooks/123456789/XXXXXXXXXXXXXXXXXXXX"
+    },
+    "telegram": {
+      "descripcion": "Bot de Telegram",
+      "crear_bot": "Habla con @BotFather en Telegram",
+      "obtener_chat_id": "Usa el bot @userinfobot",
+      "botToken_formato": "123456789:ABCdefGHIjklMNOpqrsTUVwxyz",
+      "chatId_formato": "123456789 o -123456789"
+    },
+    "teams": {
+      "descripcion": "Webhook de Microsoft Teams",
+      "obtener_webhook": "Channel > Connectors > Incoming Webhook",
+      "formato": "https://outlook.office.com/webhook/..."
+    },
+    "webhook": {
+      "descripcion": "Webhook personalizado",
+      "metodos": ["POST", "GET", "PUT"],
+      "payload": "JSON con información del servicio"
+    }
+  },
+
+  "// DETECCIÓN DE PATRONES DISPONIBLES": {
+    "progressive_degradation": "Response time aumentando progresivamente",
+    "intermittent_failures": "Fallos esporádicos no consecutivos",
+    "recurring_downtime": "Caídas en horarios específicos",
+    "cascade_failure": "Fallo en cadena de servicios relacionados",
+    "performance_spike": "Picos súbitos de latencia",
+    "recovery_pattern": "Patrón de recuperación después de caídas"
+  }
+}

@@ -84,7 +84,7 @@ export interface ServiceAlertConfig {
     escalation?: EscalationConfig;
 
     /** Canales de notificación habilitados */
-    channels?: NotificationChannel[];
+    channels?: NotificationChannel[] | any; // any para soportar la estructura de Fase 4
 
     /** Emails a notificar cuando el servicio falla */
     notifyEmails?: string[];

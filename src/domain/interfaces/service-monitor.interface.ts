@@ -120,6 +120,32 @@ export interface ServiceConfig {
             /** Emails adicionales para escalación */
             notifyTo: string[];
         };
+
+        /** Canales de notificación (Fase 4) */
+        channels?: {
+            slack?: {
+                enabled: boolean;
+                webhookUrl: string;
+            };
+            discord?: {
+                enabled: boolean;
+                webhookUrl: string;
+            };
+            telegram?: {
+                enabled: boolean;
+                botToken: string;
+                chatId: string;
+            };
+            teams?: {
+                enabled: boolean;
+                webhookUrl: string;
+            };
+            webhook?: {
+                enabled: boolean;
+                url: string;
+                method?: 'POST' | 'GET';
+            };
+        };
     };
 
     /** Servicio activo o pausado */
