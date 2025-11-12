@@ -1,0 +1,38 @@
+{
+  "global": {
+    "defaultTimeout": 5000,
+    "enableDetailedLogs": false,
+    "retryAttempts": 1,
+    "retryDelay": 1000
+  },
+  "services": [
+    {
+      "id": "google",
+      "name": "Google",
+      "url": "https://google.com",
+      "interval": "*/30 * * * * *",
+      "critical": false,
+      "description": "Google homepage - Basic connectivity test",
+      "tags": ["external", "basic"],
+      "enabled": true
+    },
+    {
+      "id": "github",
+      "name": "GitHub",
+      "url": "https://github.com",
+      "interval": "*/45 * * * * *",
+      "critical": false,
+      "description": "GitHub homepage availability",
+      "tags": ["external", "dev"],
+      "enabled": true,
+      "healthCheck": {
+        "method": "GET",
+        "timeout": 3000,
+        "expectedResponse": {
+          "statusCode": 200,
+          "maxResponseTime": 2000
+        }
+      }
+    }
+  ]
+}

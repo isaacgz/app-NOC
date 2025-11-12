@@ -1,0 +1,142 @@
+{
+  "// CONFIGURACIÓN GLOBAL": "Configuración que aplica a todos los servicios",
+  "global": {
+    "defaultTimeout": 5000,
+    "enableDetailedLogs": false,
+    "retryAttempts": 1,
+    "retryDelay": 1000
+  },
+
+  "// SERVICIOS": "Lista de servicios a monitorear",
+  "services": [
+    {
+      "// EJEMPLO 1": "Chequeo básico - Solo verifica que el sitio responda",
+      "id": "google",
+      "name": "Google",
+      "url": "https://google.com",
+      "interval": "*/30 * * * * *",
+      "critical": false,
+      "description": "Chequeo básico de conectividad a Google",
+      "tags": ["external", "basic"],
+      "enabled": true
+    },
+
+    {
+      "// EJEMPLO 2": "Chequeo con validaciones - Verifica respuesta específica",
+      "id": "api-production",
+      "name": "API Producción",
+      "url": "https://api.example.com/health",
+      "interval": "*/10 * * * * *",
+      "critical": true,
+      "description": "API principal de producción - CRÍTICA",
+      "tags": ["internal", "critical", "api"],
+      "enabled": true,
+      "healthCheck": {
+        "method": "GET",
+        "timeout": 3000,
+        "expectedResponse": {
+          "statusCode": 200,
+          "bodyContains": "ok",
+          "maxResponseTime": 500
+        }
+      }
+    },
+
+    {
+      "// EJEMPLO 3": "Chequeo con múltiples códigos aceptables",
+      "id": "database-api",
+      "name": "Database API",
+      "url": "https://db.example.com/ping",
+      "interval": "*/20 * * * * *",
+      "critical": true,
+      "description": "API de base de datos",
+      "tags": ["internal", "critical", "database"],
+      "enabled": true,
+      "healthCheck": {
+        "method": "GET",
+        "timeout": 5000,
+        "expectedResponse": {
+          "acceptedStatusCodes": [200, 201, 204],
+          "maxResponseTime": 1000
+        }
+      }
+    },
+
+    {
+      "// EJEMPLO 4": "Chequeo HEAD (sin descargar contenido)",
+      "id": "cdn-assets",
+      "name": "CDN Assets",
+      "url": "https://cdn.example.com/status",
+      "interval": "*/60 * * * * *",
+      "critical": false,
+      "description": "CDN de assets estáticos",
+      "tags": ["external", "cdn"],
+      "enabled": true,
+      "healthCheck": {
+        "method": "HEAD",
+        "timeout": 3000
+      }
+    },
+
+    {
+      "// EJEMPLO 5": "Chequeo POST con body",
+      "id": "api-auth",
+      "name": "API Authentication",
+      "url": "https://auth.example.com/validate",
+      "interval": "*/15 * * * * *",
+      "critical": true,
+      "description": "Endpoint de autenticación",
+      "tags": ["internal", "critical", "auth"],
+      "enabled": false,
+      "healthCheck": {
+        "method": "POST",
+        "timeout": 4000,
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "ping": true
+        },
+        "expectedResponse": {
+          "statusCode": 200,
+          "bodyContains": "valid"
+        }
+      }
+    },
+
+    {
+      "// EJEMPLO 6": "Servicio local",
+      "id": "local-api",
+      "name": "Local API",
+      "url": "http://localhost:3000/health",
+      "interval": "*/5 * * * * *",
+      "critical": false,
+      "description": "API local de desarrollo",
+      "tags": ["local", "dev"],
+      "enabled": false,
+      "healthCheck": {
+        "method": "GET",
+        "timeout": 1000,
+        "expectedResponse": {
+          "statusCode": 200
+        }
+      }
+    }
+  ],
+
+  "// NOTAS": "Información importante sobre la configuración",
+  "// INTERVALOS CRON": {
+    "formato": "segundos minutos horas día-del-mes mes día-de-la-semana",
+    "ejemplos": {
+      "cada-5-segundos": "*/5 * * * * *",
+      "cada-30-segundos": "*/30 * * * * *",
+      "cada-minuto": "0 * * * * *",
+      "cada-5-minutos": "0 */5 * * * *",
+      "cada-hora": "0 0 * * * *"
+    }
+  },
+  "// MÉTODOS HTTP": ["GET", "POST", "HEAD", "PUT", "PATCH", "DELETE"],
+  "// CAMPOS REQUERIDOS": ["id", "name", "url", "interval"],
+  "// CAMPOS OPCIONALES": ["critical", "description", "tags", "enabled", "healthCheck"]
+}
