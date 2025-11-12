@@ -6,6 +6,7 @@ import { CronService } from "./cron/cron-service";
 import { EmailService } from "./email/email.service";
 import { MultiServiceMonitor } from "./services/multi-service-monitor";
 import { CheckResult } from "../domain/interfaces/service-monitor.interface";
+import { DashboardServer } from "./dashboard/dashboard.server";
 import * as path from "path";
 
 const fileSystemRepository  = new LogRepositoryImpl(
@@ -18,23 +19,22 @@ const emailService = new EmailService();
 export class Server {
 
     private static monitor: MultiServiceMonitor;
+    private static dashboardServer: DashboardServer;
 
     public static async start(){
 
         console.log('\n🚀 NOC System Starting...\n');
 
         // ============================================================
-        // SISTEMA DE MONITOREO AVANZADO - FASE 1
+        // SISTEMA DE MONITOREO AVANZADO
         // ============================================================
-        // Monitoreo de múltiples servicios con:
-        // - Medición de tiempo de respuesta
-        // - Health checks avanzados con validación
-        // - Estadísticas en tiempo real
-        // - Configuración flexible desde archivo JSON
+        // Fase 1: Monitoreo de múltiples servicios
+        // Fase 2: Alertas inteligentes
+        // Fase 3: Dashboard web en tiempo real
         // ============================================================
 
         try {
-            // Inicializar monitor con sistema de alertas (Fase 2)
+            // Inicializar monitor con sistema de alertas
             this.monitor = new MultiServiceMonitor(
                 fileSystemRepository,
                 emailService,
@@ -46,13 +46,17 @@ export class Server {
             const configPath = path.join(process.cwd(), 'config', 'services.json');
             await this.monitor.startFromConfigFile(configPath);
 
+            // Iniciar Dashboard Web (Fase 3)
+            const dashboardPort = parseInt(process.env.PORT || '3000');
+            this.dashboardServer = new DashboardServer(this.monitor, dashboardPort);
+            this.dashboardServer.start();
+
             // Mostrar estado cada 60 segundos
             setInterval(() => {
                 this.monitor.printCurrentStatus();
             }, 60000);
 
-            // Comando para detener el monitoreo
-            console.log('💡 TIP: Para ver el estado actual de los servicios, presiona Ctrl+C\n');
+            console.log('💡 TIP: Open http://localhost:' + dashboardPort + ' to view the dashboard\n');
 
         } catch (error) {
             console.error('❌ Failed to start monitoring system:', error);
