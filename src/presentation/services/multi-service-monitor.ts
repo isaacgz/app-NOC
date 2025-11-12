@@ -9,22 +9,36 @@ import {
     ServiceStatistics,
 } from '../../domain/interfaces/service-monitor.interface';
 import { LoadServicesConfig } from '../../domain/use-cases/config/load-services-config';
+import { IntelligentAlertService } from '../../domain/services/intelligent-alert.service';
+import { SendAlertNotification } from '../../domain/use-cases/alerts/send-alert-notification';
+import { EmailService } from '../email/email.service';
 
 /**
- * Monitor de múltiples servicios
- * Gestiona el monitoreo de múltiples servicios concurrentemente
+ * Monitor de múltiples servicios con alertas inteligentes (Fase 2)
+ * Gestiona el monitoreo de múltiples servicios concurrentemente con:
+ * - Sistema de cooldown para evitar spam
+ * - Reintentos automáticos antes de alertar
+ * - Detección de recuperación de servicios
+ * - Escalación automática de alertas
  */
 export class MultiServiceMonitor {
     private jobs: Map<string, CronJob> = new Map();
+    private escalationTimers: Map<string, NodeJS.Timeout> = new Map();
     private serviceStats: Map<string, ServiceStatistics> = new Map();
     private checkHistory: Map<string, CheckResult[]> = new Map();
     private config!: MonitoringConfig;
+    private alertService: IntelligentAlertService;
+    private notificationService: SendAlertNotification;
 
     constructor(
         private readonly logRepository: LogRepository,
+        private readonly emailService: EmailService,
         private readonly onServiceUp?: (result: CheckResult) => void,
         private readonly onServiceDown?: (result: CheckResult) => void
-    ) {}
+    ) {
+        this.alertService = new IntelligentAlertService();
+        this.notificationService = new SendAlertNotification(emailService);
+    }
 
     /**
      * Inicia el monitoreo de servicios desde archivo de configuración
@@ -137,11 +151,32 @@ export class MultiServiceMonitor {
     /**
      * Maneja un chequeo exitoso
      */
-    private handleSuccess(service: ServiceConfig, result: CheckResult): void {
+    private async handleSuccess(service: ServiceConfig, result: CheckResult): Promise<void> {
         this.updateStatistics(service.id, result);
 
         // Callback del usuario
         this.onServiceUp?.(result);
+
+        // Verificar si el servicio se recuperó (estaba caído y ahora está up)
+        if (service.alerts?.enabled !== false) {
+            const alertDecision = this.alertService.shouldSendAlert(
+                service.id,
+                result,
+                service.alerts
+            );
+
+            if (alertDecision.shouldSend && alertDecision.alertRecord) {
+                // Enviar notificación de recuperación
+                await this.sendAlertNotification(
+                    alertDecision.alertRecord,
+                    service,
+                    false
+                );
+
+                // Limpiar timer de escalación si existe
+                this.clearEscalationTimer(service.id);
+            }
+        }
 
         // Log básico de éxito (solo si no es verbose)
         if (!this.config.global?.enableDetailedLogs) {
@@ -152,11 +187,42 @@ export class MultiServiceMonitor {
     /**
      * Maneja un chequeo fallido
      */
-    private handleError(service: ServiceConfig, result: CheckResult): void {
+    private async handleError(service: ServiceConfig, result: CheckResult): Promise<void> {
         this.updateStatistics(service.id, result);
 
         // Callback del usuario
         this.onServiceDown?.(result);
+
+        // Sistema de alertas inteligentes
+        if (service.alerts?.enabled !== false) {
+            const alertDecision = this.alertService.shouldSendAlert(
+                service.id,
+                result,
+                service.alerts
+            );
+
+            if (alertDecision.shouldSend && alertDecision.alertRecord) {
+                // Enviar alerta
+                await this.sendAlertNotification(
+                    alertDecision.alertRecord,
+                    service,
+                    false
+                );
+
+                // Marcar como enviada
+                this.alertService.markAlertAsSent(alertDecision.alertRecord.id, service.id);
+
+                // Configurar escalación si está habilitada
+                if (service.alerts?.escalation?.enabled) {
+                    this.setupEscalationTimer(service, alertDecision.alertRecord);
+                }
+            } else if (!alertDecision.shouldSend) {
+                // Log de supresión
+                if (alertDecision.reason) {
+                    console.log(`   ℹ️  Alert suppressed: ${alertDecision.reason}`);
+                }
+            }
+        }
 
         // Log de error (siempre visible)
         const criticalFlag = service.critical ? '🔴 CRITICAL' : '⚠️';
@@ -219,12 +285,20 @@ export class MultiServiceMonitor {
     stopAll(): void {
         console.log('\n🛑 Stopping all monitors...');
 
+        // Detener todos los jobs
         for (const [serviceId, job] of this.jobs.entries()) {
             job.stop();
             console.log(`  ✓ Stopped monitor for service: ${serviceId}`);
         }
 
+        // Limpiar todos los timers de escalación
+        for (const [serviceId, timer] of this.escalationTimers.entries()) {
+            clearTimeout(timer);
+            console.log(`  ✓ Cleared escalation timer for: ${serviceId}`);
+        }
+
         this.jobs.clear();
+        this.escalationTimers.clear();
         console.log('✅ All monitors stopped\n');
     }
 
@@ -323,6 +397,105 @@ export class MultiServiceMonitor {
         }
 
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    }
+
+    /**
+     * Envía una notificación de alerta
+     */
+    private async sendAlertNotification(
+        alertRecord: any,
+        service: ServiceConfig,
+        isEscalation: boolean
+    ): Promise<void> {
+        try {
+            // Determinar destinatarios
+            let recipients: string[] = [];
+
+            if (isEscalation && service.alerts?.escalation?.notifyTo) {
+                recipients = service.alerts.escalation.notifyTo;
+            } else if (service.alerts?.notifyEmails) {
+                recipients = service.alerts.notifyEmails;
+            }
+
+            if (recipients.length === 0) {
+                console.log(`   ℹ️  No email recipients configured for ${service.name}`);
+                return;
+            }
+
+            // Obtener estado de salud para información adicional
+            const healthState = this.alertService.getHealthState(service.id);
+
+            // Enviar notificación
+            const result = await this.notificationService.execute(
+                alertRecord,
+                recipients,
+                isEscalation,
+                healthState
+            );
+
+            if (result.success) {
+                const escalationLabel = isEscalation ? ' (ESCALATED)' : '';
+                console.log(`   📧 Alert sent to ${recipients.join(', ')}${escalationLabel}`);
+            } else {
+                console.error(`   ❌ Failed to send alert: ${result.error}`);
+            }
+        } catch (error) {
+            console.error(`   ❌ Error sending notification:`, error);
+        }
+    }
+
+    /**
+     * Configura un timer para escalación automática
+     */
+    private setupEscalationTimer(service: ServiceConfig, alertRecord: any): void {
+        if (!service.alerts?.escalation?.enabled) return;
+
+        // Limpiar timer existente si hay
+        this.clearEscalationTimer(service.id);
+
+        const escalationMinutes = service.alerts.escalation.afterMinutes;
+        const escalationMs = escalationMinutes * 60 * 1000;
+
+        console.log(`   ⏱️  Escalation timer set for ${escalationMinutes} minutes`);
+
+        const timer = setTimeout(async () => {
+            // Verificar si aún está caído
+            const healthState = this.alertService.getHealthState(service.id);
+
+            if (healthState && healthState.currentStatus === 'down') {
+                console.log(`\n🚨 ESCALATING: ${service.name} has been down for ${escalationMinutes} minutes`);
+
+                // Crear alerta de escalación
+                const escalationCheck = this.alertService.checkEscalation(
+                    service.id,
+                    service.alerts?.escalation
+                );
+
+                if (escalationCheck.needsEscalation) {
+                    // Enviar notificación de escalación
+                    await this.sendAlertNotification(alertRecord, service, true);
+                }
+            } else {
+                console.log(`   ℹ️  Service ${service.name} recovered before escalation`);
+            }
+
+            // Limpiar el timer
+            this.escalationTimers.delete(service.id);
+        }, escalationMs);
+
+        this.escalationTimers.set(service.id, timer);
+    }
+
+    /**
+     * Limpia el timer de escalación de un servicio
+     */
+    private clearEscalationTimer(serviceId: string): void {
+        const timer = this.escalationTimers.get(serviceId);
+        if (timer) {
+            clearTimeout(timer);
+            this.escalationTimers.delete(serviceId);
+            console.log(`   ✓ Escalation timer cleared for service: ${serviceId}`);
+        }
     }
 
     /**

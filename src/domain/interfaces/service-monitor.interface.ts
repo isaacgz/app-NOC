@@ -84,6 +84,44 @@ export interface ServiceConfig {
     /** Configuración avanzada de health check */
     healthCheck?: HealthCheckConfig;
 
+    /** Configuración de alertas (Fase 2) */
+    alerts?: {
+        /** Habilitar alertas para este servicio */
+        enabled?: boolean;
+
+        /** Emails a notificar */
+        notifyEmails?: string[];
+
+        /** Notificar cuando se recupera */
+        notifyOnRecovery?: boolean;
+
+        /** Configuración de cooldown */
+        cooldown?: {
+            /** Duración del cooldown en minutos */
+            durationMinutes: number;
+            /** Máximo de alertas en el período */
+            maxAlertsInPeriod?: number;
+        };
+
+        /** Configuración de reintentos */
+        retry?: {
+            /** Número de intentos antes de alertar */
+            attempts: number;
+            /** Delay entre reintentos en ms */
+            delayMs: number;
+        };
+
+        /** Configuración de escalación */
+        escalation?: {
+            /** Habilitar escalación */
+            enabled: boolean;
+            /** Minutos antes de escalar */
+            afterMinutes: number;
+            /** Emails adicionales para escalación */
+            notifyTo: string[];
+        };
+    };
+
     /** Servicio activo o pausado */
     enabled?: boolean;
 }

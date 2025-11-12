@@ -1,0 +1,276 @@
+{
+  "// FASE 2": "Configuración con Sistema de Alertas Inteligentes",
+
+  "global": {
+    "defaultTimeout": 5000,
+    "enableDetailedLogs": false,
+    "retryAttempts": 1,
+    "retryDelay": 1000
+  },
+
+  "services": [
+    {
+      "// EJEMPLO 1": "Servicio crítico con alertas completas",
+      "id": "api-production",
+      "name": "API de Producción",
+      "url": "https://api.example.com/health",
+      "interval": "*/30 * * * * *",
+      "critical": true,
+      "description": "API principal - Configuración completa de alertas",
+      "tags": ["production", "critical", "api"],
+      "enabled": true,
+
+      "healthCheck": {
+        "method": "GET",
+        "timeout": 3000,
+        "expectedResponse": {
+          "statusCode": 200,
+          "bodyContains": "healthy",
+          "maxResponseTime": 500
+        }
+      },
+
+      "alerts": {
+        "enabled": true,
+        "notifyEmails": ["ops@example.com", "team@example.com"],
+        "notifyOnRecovery": true,
+
+        "cooldown": {
+          "durationMinutes": 15,
+          "maxAlertsInPeriod": 3
+        },
+
+        "retry": {
+          "attempts": 3,
+          "delayMs": 5000
+        },
+
+        "escalation": {
+          "enabled": true,
+          "afterMinutes": 10,
+          "notifyTo": ["manager@example.com", "cto@example.com"]
+        }
+      }
+    },
+
+    {
+      "// EJEMPLO 2": "Servicio con reintentos pero sin escalación",
+      "id": "database-api",
+      "name": "Database API",
+      "url": "https://db.example.com/ping",
+      "interval": "*/45 * * * * *",
+      "critical": true,
+      "description": "Base de datos - Reintentos antes de alertar",
+      "tags": ["database", "internal"],
+      "enabled": true,
+
+      "healthCheck": {
+        "method": "GET",
+        "timeout": 5000,
+        "expectedResponse": {
+          "acceptedStatusCodes": [200, 204]
+        }
+      },
+
+      "alerts": {
+        "enabled": true,
+        "notifyEmails": ["devops@example.com"],
+        "notifyOnRecovery": true,
+
+        "cooldown": {
+          "durationMinutes": 10
+        },
+
+        "retry": {
+          "attempts": 5,
+          "delayMs": 3000
+        },
+
+        "escalation": {
+          "enabled": false,
+          "afterMinutes": 0,
+          "notifyTo": []
+        }
+      }
+    },
+
+    {
+      "// EJEMPLO 3": "Servicio con solo notificación de caídas",
+      "id": "cdn-assets",
+      "name": "CDN Assets",
+      "url": "https://cdn.example.com/health",
+      "interval": "0 */5 * * * *",
+      "critical": false,
+      "description": "CDN - Solo notificar caídas",
+      "tags": ["cdn", "external"],
+      "enabled": true,
+
+      "healthCheck": {
+        "method": "HEAD",
+        "timeout": 3000
+      },
+
+      "alerts": {
+        "enabled": true,
+        "notifyEmails": ["monitoring@example.com"],
+        "notifyOnRecovery": false,
+
+        "cooldown": {
+          "durationMinutes": 30
+        },
+
+        "retry": {
+          "attempts": 2,
+          "delayMs": 5000
+        }
+      }
+    },
+
+    {
+      "// EJEMPLO 4": "Servicio sin alertas por email",
+      "id": "metrics-collector",
+      "name": "Metrics Collector",
+      "url": "http://localhost:9090/metrics",
+      "interval": "0 * * * * *",
+      "critical": false,
+      "description": "Recolector de métricas - Solo logs",
+      "tags": ["local", "monitoring"],
+      "enabled": true,
+
+      "healthCheck": {
+        "method": "GET",
+        "timeout": 2000
+      },
+
+      "alerts": {
+        "enabled": false
+      }
+    },
+
+    {
+      "// EJEMPLO 5": "Servicio con cooldown agresivo",
+      "id": "third-party-service",
+      "name": "Third Party Service",
+      "url": "https://api.thirdparty.com/status",
+      "interval": "*/60 * * * * *",
+      "critical": false,
+      "description": "Servicio externo - Cooldown largo para evitar spam",
+      "tags": ["external", "third-party"],
+      "enabled": true,
+
+      "healthCheck": {
+        "method": "GET",
+        "timeout": 10000
+      },
+
+      "alerts": {
+        "enabled": true,
+        "notifyEmails": ["admin@example.com"],
+        "notifyOnRecovery": true,
+
+        "cooldown": {
+          "durationMinutes": 60,
+          "maxAlertsInPeriod": 2
+        },
+
+        "retry": {
+          "attempts": 3,
+          "delayMs": 10000
+        }
+      }
+    },
+
+    {
+      "// EJEMPLO 6": "Servicio con escalación rápida",
+      "id": "payment-gateway",
+      "name": "Payment Gateway",
+      "url": "https://payments.example.com/health",
+      "interval": "*/15 * * * * *",
+      "critical": true,
+      "description": "Pasarela de pagos - Escalación rápida",
+      "tags": ["payments", "critical"],
+      "enabled": true,
+
+      "healthCheck": {
+        "method": "POST",
+        "timeout": 5000,
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "action": "ping"
+        },
+        "expectedResponse": {
+          "statusCode": 200,
+          "bodyContains": "pong"
+        }
+      },
+
+      "alerts": {
+        "enabled": true,
+        "notifyEmails": ["payments-team@example.com"],
+        "notifyOnRecovery": true,
+
+        "cooldown": {
+          "durationMinutes": 5
+        },
+
+        "retry": {
+          "attempts": 2,
+          "delayMs": 2000
+        },
+
+        "escalation": {
+          "enabled": true,
+          "afterMinutes": 5,
+          "notifyTo": ["payments-lead@example.com", "ceo@example.com"]
+        }
+      }
+    }
+  ],
+
+  "// NOTAS SOBRE ALERTAS": {
+    "cooldown": {
+      "descripcion": "Evita spam de notificaciones",
+      "durationMinutes": "Tiempo mínimo entre alertas",
+      "maxAlertsInPeriod": "Máximo de alertas permitidas en el período (opcional)"
+    },
+    "retry": {
+      "descripcion": "Reintentos antes de considerar el servicio caído",
+      "attempts": "Número de intentos (1-10 recomendado)",
+      "delayMs": "Delay entre reintentos en milisegundos"
+    },
+    "escalation": {
+      "descripcion": "Escalación automática si el problema persiste",
+      "enabled": "Activar/desactivar escalación",
+      "afterMinutes": "Minutos antes de escalar (5-60 recomendado)",
+      "notifyTo": "Emails adicionales para escalación"
+    },
+    "notifyOnRecovery": "Enviar email cuando el servicio se recupera",
+    "notifyEmails": "Lista de emails a notificar en alertas normales"
+  },
+
+  "// CASOS DE USO RECOMENDADOS": {
+    "servicios-criticos": {
+      "retry": {"attempts": 3, "delayMs": 5000},
+      "cooldown": {"durationMinutes": 10},
+      "escalation": {"enabled": true, "afterMinutes": 10}
+    },
+    "servicios-normales": {
+      "retry": {"attempts": 2, "delayMs": 5000},
+      "cooldown": {"durationMinutes": 15},
+      "escalation": {"enabled": false}
+    },
+    "servicios-externos": {
+      "retry": {"attempts": 5, "delayMs": 10000},
+      "cooldown": {"durationMinutes": 30},
+      "escalation": {"enabled": false}
+    },
+    "servicios-no-criticos": {
+      "retry": {"attempts": 1, "delayMs": 5000},
+      "cooldown": {"durationMinutes": 60},
+      "escalation": {"enabled": false}
+    }
+  }
+}

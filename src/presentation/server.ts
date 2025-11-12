@@ -34,9 +34,10 @@ export class Server {
         // ============================================================
 
         try {
-            // Inicializar monitor
+            // Inicializar monitor con sistema de alertas (Fase 2)
             this.monitor = new MultiServiceMonitor(
                 fileSystemRepository,
+                emailService,
                 this.onServiceUp,
                 this.onServiceDown
             );
