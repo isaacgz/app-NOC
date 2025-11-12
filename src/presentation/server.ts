@@ -14,6 +14,12 @@ import { IncidentManagerService } from "../domain/services/incident-manager.serv
 import { SLOCalculatorService } from "../domain/services/slo-calculator.service";
 import { LoadServicesConfig } from "../domain/use-cases/config/load-services-config";
 import { LoadSLOsConfig } from "../domain/use-cases/config/load-slos-config";
+import { InfluxDBDataSource } from "../infrastructure/datasources/influxdb.datasource";
+import { MetricsStorageService } from "../domain/services/metrics-storage.service";
+import * as dotenv from 'dotenv';
+
+// Cargar variables de entorno
+dotenv.config();
 
 const fileSystemRepository  = new LogRepositoryImpl(
     new FileSystemDataSource()
@@ -28,6 +34,7 @@ export class Server {
     private static dashboardServer: DashboardServer;
     private static incidentManager?: IncidentManagerService;
     private static sloCalculator?: SLOCalculatorService;
+    private static metricsStorage?: MetricsStorageService;
 
     public static async start(){
 
@@ -40,9 +47,48 @@ export class Server {
         // Fase 2: Alertas inteligentes
         // Fase 3: Dashboard web en tiempo real
         // Fase 5: Gestión de incidentes y SLOs
+        // Fase 6: Time-Series Database (InfluxDB)
         // ============================================================
 
         try {
+            // ============================================================
+            // FASE 6: Inicializar InfluxDB (Opcional)
+            // ============================================================
+            const influxEnabled = process.env.INFLUXDB_ENABLED === 'true';
+
+            if (influxEnabled) {
+                console.log('📊 Initializing InfluxDB Time-Series Database (Phase 6)...');
+
+                const influxConfig = {
+                    url: process.env.INFLUXDB_URL || 'http://localhost:8086',
+                    token: process.env.INFLUXDB_TOKEN || '',
+                    org: process.env.INFLUXDB_ORG || 'noc-monitoring',
+                    bucket: process.env.INFLUXDB_BUCKET || 'service-metrics'
+                };
+
+                try {
+                    const influxDB = new InfluxDBDataSource(influxConfig);
+
+                    // Verificar conexión
+                    const isConnected = await influxDB.ping();
+                    if (isConnected) {
+                        this.metricsStorage = new MetricsStorageService(influxDB);
+                        console.log('✅ InfluxDB connected successfully');
+                        console.log(`   Organization: ${influxConfig.org}`);
+                        console.log(`   Bucket: ${influxConfig.bucket}\n`);
+                    } else {
+                        console.warn('⚠️  InfluxDB ping failed, continuing without time-series storage\n');
+                    }
+                } catch (error) {
+                    console.warn('⚠️  Failed to connect to InfluxDB, continuing without time-series storage');
+                    console.warn(`   Error: ${error}`);
+                    console.warn('   System will use filesystem logs only\n');
+                }
+            } else {
+                console.log('📝 InfluxDB disabled - Using filesystem logs only');
+                console.log('   Set INFLUXDB_ENABLED=true in .env to enable time-series storage\n');
+            }
+
             // ============================================================
             // FASE 5: Inicializar Sistema de Incidentes y SLOs
             // ============================================================
@@ -52,9 +98,9 @@ export class Server {
             const incidentRepository = new IncidentRepositoryImpl();
             const sloRepository = new SLORepositoryImpl();
 
-            // Servicios
+            // Servicios (FASE 6: pasar metricsStorage a SLO calculator)
             this.incidentManager = new IncidentManagerService(incidentRepository);
-            this.sloCalculator = new SLOCalculatorService(fileSystemRepository);
+            this.sloCalculator = new SLOCalculatorService(fileSystemRepository, this.metricsStorage);
 
             console.log('✅ Incident Management System initialized\n');
 
@@ -98,12 +144,13 @@ export class Server {
             }
 
             // ============================================================
-            // Inicializar monitor con sistema de incidentes
+            // Inicializar monitor con sistema de incidentes (FASE 6: + InfluxDB)
             // ============================================================
             this.monitor = new MultiServiceMonitor(
                 fileSystemRepository,
                 emailService,
                 this.incidentManager,
+                this.metricsStorage,
                 this.onServiceUp,
                 this.onServiceDown
             );
