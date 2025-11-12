@@ -12,14 +12,19 @@ import { LoadServicesConfig } from '../../domain/use-cases/config/load-services-
 import { IntelligentAlertService } from '../../domain/services/intelligent-alert.service';
 import { SendAlertNotification } from '../../domain/use-cases/alerts/send-alert-notification';
 import { EmailService } from '../email/email.service';
+import { IncidentManagerService } from '../../domain/services/incident-manager.service';
+import { IncidentStatus } from '../../domain/entities/incident.entity';
+import { MetricsStorageService } from '../../domain/services/metrics-storage.service';
 
 /**
- * Monitor de múltiples servicios con alertas inteligentes (Fase 2)
+ * Monitor de múltiples servicios con alertas inteligentes (Fase 2 + Fase 5 + Fase 6)
  * Gestiona el monitoreo de múltiples servicios concurrentemente con:
  * - Sistema de cooldown para evitar spam
  * - Reintentos automáticos antes de alertar
  * - Detección de recuperación de servicios
  * - Escalación automática de alertas
+ * - Gestión automática de incidentes (Fase 5)
+ * - Almacenamiento de métricas en InfluxDB (Fase 6)
  */
 export class MultiServiceMonitor {
     private jobs: Map<string, CronJob> = new Map();
@@ -33,6 +38,8 @@ export class MultiServiceMonitor {
     constructor(
         private readonly logRepository: LogRepository,
         private readonly emailService: EmailService,
+        private readonly incidentManager?: IncidentManagerService,
+        private readonly metricsStorage?: MetricsStorageService,
         private readonly onServiceUp?: (result: CheckResult) => void,
         private readonly onServiceDown?: (result: CheckResult) => void
     ) {
@@ -154,8 +161,26 @@ export class MultiServiceMonitor {
     private async handleSuccess(service: ServiceConfig, result: CheckResult): Promise<void> {
         this.updateStatistics(service.id, result);
 
+        // FASE 6: Almacenar métricas en InfluxDB
+        if (this.metricsStorage) {
+            await this.metricsStorage.storeCheckResult(result);
+        }
+
         // Callback del usuario
         this.onServiceUp?.(result);
+
+        // FASE 5: Auto-resolver incidente si existe uno activo
+        if (this.incidentManager) {
+            try {
+                const activeIncident = await this.incidentManager.findActiveByService(service.id);
+                if (activeIncident) {
+                    await this.incidentManager.autoResolveIncident(service.id);
+                    console.log(`   ✅ Incident ${activeIncident.id} auto-resolved`);
+                }
+            } catch (error) {
+                console.error(`   ❌ Error resolving incident:`, error);
+            }
+        }
 
         // Verificar si el servicio se recuperó (estaba caído y ahora está up)
         if (service.alerts?.enabled !== false) {
@@ -190,8 +215,50 @@ export class MultiServiceMonitor {
     private async handleError(service: ServiceConfig, result: CheckResult): Promise<void> {
         this.updateStatistics(service.id, result);
 
+        // FASE 6: Almacenar métricas en InfluxDB
+        if (this.metricsStorage) {
+            await this.metricsStorage.storeCheckResult(result);
+        }
+
         // Callback del usuario
         this.onServiceDown?.(result);
+
+        // FASE 5: Gestión automática de incidentes
+        if (this.incidentManager) {
+            try {
+                const activeIncident = await this.incidentManager.findActiveByService(service.id);
+
+                if (!activeIncident) {
+                    // Crear nuevo incidente solo si debería enviar alerta
+                    const alertDecision = this.alertService.shouldSendAlert(
+                        service.id,
+                        result,
+                        service.alerts
+                    );
+
+                    if (alertDecision.shouldSend) {
+                        const severity = this.incidentManager.determineSeverity(result);
+                        const incident = await this.incidentManager.createIncident({
+                            serviceId: service.id,
+                            serviceName: service.name,
+                            severity: severity,
+                            description: `Service check failed: ${result.message}`,
+                            estimatedImpact: service.critical ? 'CRITICAL - High priority service' : undefined
+                        });
+
+                        console.log(`   📋 Incident created: ${incident.id} (${severity})`);
+                    }
+                } else {
+                    // Vincular check fallido a incidente existente
+                    await this.incidentManager.linkCheckToIncident(activeIncident.id, {
+                        message: result.message,
+                        timestamp: result.timestamp
+                    });
+                }
+            } catch (error) {
+                console.error(`   ❌ Error managing incident:`, error);
+            }
+        }
 
         // Sistema de alertas inteligentes
         if (service.alerts?.enabled !== false) {
@@ -282,7 +349,7 @@ export class MultiServiceMonitor {
     /**
      * Detiene el monitoreo de todos los servicios
      */
-    stopAll(): void {
+    async stopAll(): Promise<void> {
         console.log('\n🛑 Stopping all monitors...');
 
         // Detener todos los jobs
@@ -295,6 +362,12 @@ export class MultiServiceMonitor {
         for (const [serviceId, timer] of this.escalationTimers.entries()) {
             clearTimeout(timer);
             console.log(`  ✓ Cleared escalation timer for: ${serviceId}`);
+        }
+
+        // FASE 6: Cerrar conexión con InfluxDB
+        if (this.metricsStorage) {
+            await this.metricsStorage.stop();
+            console.log('  ✓ Closed InfluxDB connection');
         }
 
         this.jobs.clear();

@@ -234,6 +234,260 @@
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
+        /* Fase 5: Estilos para Incidentes y SLOs */
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 2rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .incidents-container {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .incident-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border-left: 4px solid;
+            transition: transform 0.2s;
+        }
+
+        .incident-card:hover {
+            transform: translateX(4px);
+        }
+
+        .incident-card.critical {
+            border-left-color: #dc2626;
+            background: linear-gradient(90deg, rgba(220, 38, 38, 0.1) 0%, #1e293b 100%);
+        }
+
+        .incident-card.high {
+            border-left-color: #f97316;
+            background: linear-gradient(90deg, rgba(249, 115, 22, 0.1) 0%, #1e293b 100%);
+        }
+
+        .incident-card.medium {
+            border-left-color: #f59e0b;
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.1) 0%, #1e293b 100%);
+        }
+
+        .incident-card.low {
+            border-left-color: #3b82f6;
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, #1e293b 100%);
+        }
+
+        .incident-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .incident-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .incident-severity {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .severity-critical {
+            background: rgba(220, 38, 38, 0.2);
+            color: #dc2626;
+        }
+
+        .severity-high {
+            background: rgba(249, 115, 22, 0.2);
+            color: #f97316;
+        }
+
+        .severity-medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .severity-low {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .incident-meta {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+        }
+
+        .incident-description {
+            margin: 0.75rem 0;
+            color: #cbd5e1;
+        }
+
+        .slo-container {
+            display: grid;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .slo-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #334155;
+        }
+
+        .slo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .slo-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .slo-compliance {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .slo-compliant {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .slo-violated {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .slo-progress-container {
+            margin: 1rem 0;
+        }
+
+        .slo-progress-bar {
+            width: 100%;
+            height: 24px;
+            background: #0f172a;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slo-progress-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .slo-progress-fill.warning {
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .slo-progress-fill.danger {
+            background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .slo-target-line {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: #fff;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        }
+
+        .slo-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .slo-metric {
+            text-align: center;
+            padding: 0.75rem;
+            background: #0f172a;
+            border-radius: 8px;
+        }
+
+        .slo-metric-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .slo-metric-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .risk-none { color: #10b981; }
+        .risk-low { color: #3b82f6; }
+        .risk-medium { color: #f59e0b; }
+        .risk-high { color: #f97316; }
+        .risk-critical { color: #dc2626; }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+            background: #1e293b;
+            border-radius: 12px;
+            border: 2px dashed #334155;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid #334155;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -244,6 +498,14 @@
             }
 
             .service-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .slo-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
@@ -298,7 +560,20 @@
                 </div>
             </div>
 
+            <!-- FASE 5: Active Incidents Section -->
+            <h2 class="section-title">🚨 Active Incidents</h2>
+            <div id="incidents-container" class="incidents-container"></div>
+
+            <!-- FASE 5: Incident Statistics -->
+            <h2 class="section-title">📊 Incident Statistics</h2>
+            <div id="incident-stats" class="stats-grid"></div>
+
+            <!-- FASE 5: SLO Compliance Section -->
+            <h2 class="section-title">🎯 SLO Compliance</h2>
+            <div id="slo-container" class="slo-container"></div>
+
             <!-- Services List -->
+            <h2 class="section-title">📡 Services Status</h2>
             <div id="services-container" class="services-grid"></div>
         </div>
     </div>

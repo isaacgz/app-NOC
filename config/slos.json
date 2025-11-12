@@ -1,0 +1,46 @@
+{
+  "slos": [
+    {
+      "id": "slo-google-availability-30d",
+      "serviceId": "google-monitor",
+      "name": "Google 99.9% Availability (30 days)",
+      "description": "Google should be available 99.9% of the time over a 30-day rolling window",
+      "target": 99.9,
+      "window": "30d",
+      "sliType": "availability",
+      "enabled": true
+    },
+    {
+      "id": "slo-google-latency-24h",
+      "serviceId": "google-monitor",
+      "name": "Google < 200ms Response Time (24h)",
+      "description": "95% of requests to Google should complete within 200ms",
+      "target": 95,
+      "window": "24h",
+      "sliType": "latency",
+      "threshold": 200,
+      "enabled": true
+    },
+    {
+      "id": "slo-github-availability-7d",
+      "serviceId": "github-monitor",
+      "name": "GitHub 99.5% Availability (7 days)",
+      "description": "GitHub should be available 99.5% of the time over a 7-day rolling window",
+      "target": 99.5,
+      "window": "7d",
+      "sliType": "availability",
+      "enabled": true
+    },
+    {
+      "id": "slo-github-latency-24h",
+      "serviceId": "github-monitor",
+      "name": "GitHub < 500ms Response Time (24h)",
+      "description": "90% of requests to GitHub should complete within 500ms",
+      "target": 90,
+      "window": "24h",
+      "sliType": "latency",
+      "threshold": 500,
+      "enabled": true
+    }
+  ]
+}
