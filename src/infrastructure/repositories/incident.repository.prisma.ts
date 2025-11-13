@@ -106,9 +106,13 @@ export class IncidentRepositoryPrisma implements IncidentRepository {
     /**
      * Busca incidentes por estado
      */
-    async findByStatus(status: IncidentStatus): Promise<Incident[]> {
+    async findByStatus(status: IncidentStatus[]): Promise<Incident[]> {
         const incidents = await prisma.incident.findMany({
-            where: { status: this.mapStatusToPrisma(status) },
+            where: {
+                status: {
+                    in: status.map(s => this.mapStatusToPrisma(s))
+                }
+            },
             orderBy: { createdAt: 'desc' },
         });
 
@@ -128,12 +132,10 @@ export class IncidentRepositoryPrisma implements IncidentRepository {
     }
 
     /**
-     * Obtiene todos los incidentes con paginación
+     * Obtiene todos los incidentes
      */
-    async findAll(skip: number = 0, take: number = 100): Promise<Incident[]> {
+    async getAll(): Promise<Incident[]> {
         const incidents = await prisma.incident.findMany({
-            skip,
-            take,
             orderBy: { createdAt: 'desc' },
         });
 
@@ -209,9 +211,9 @@ export class IncidentRepositoryPrisma implements IncidentRepository {
     }
 
     /**
-     * Elimina un incidente
+     * Elimina un incidente por ID
      */
-    async delete(id: string): Promise<boolean> {
+    async deleteById(id: string): Promise<boolean> {
         try {
             await prisma.incident.delete({
                 where: { id },
@@ -220,6 +222,23 @@ export class IncidentRepositoryPrisma implements IncidentRepository {
         } catch (error) {
             return false;
         }
+    }
+
+    /**
+     * Busca incidentes por rango de fechas
+     */
+    async findByDateRange(startDate: Date, endDate: Date): Promise<Incident[]> {
+        const incidents = await prisma.incident.findMany({
+            where: {
+                createdAt: {
+                    gte: startDate,
+                    lte: endDate,
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        return incidents.map(i => this.mapPrismaToDomain(i));
     }
 
     // ============================================================
