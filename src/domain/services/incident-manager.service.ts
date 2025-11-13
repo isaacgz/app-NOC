@@ -36,7 +36,6 @@ export class IncidentManagerService {
       id: uuid(),
       serviceId: params.serviceId,
       serviceName: params.serviceName,
-      title: `${params.serviceName} - Service ${params.severity === IncidentSeverity.CRITICAL ? 'Down' : 'Degraded'}`,
       description: params.description,
       severity: params.severity,
       status: IncidentStatus.NEW,
@@ -47,10 +46,11 @@ export class IncidentManagerService {
       timeline: [
         {
           timestamp: new Date(),
-          action: 'CREATED',
-          description: 'Incident automatically created by monitoring system'
+          type: 'created',
+          message: 'Incident automatically created by monitoring system'
         }
-      ]
+      ],
+      metadata: {}
     };
 
     const saved = await this.incidentRepo.save(incident);
@@ -84,26 +84,33 @@ export class IncidentManagerService {
       }
     }
 
+    // Actualizar metadata
+    if (!incident.metadata) {
+      incident.metadata = {};
+    }
+
     if (params.assignedTo !== undefined) {
-      incident.assignedTo = params.assignedTo;
+      incident.metadata.assignedTo = params.assignedTo;
     }
 
     if (params.rootCause !== undefined) {
-      incident.rootCause = params.rootCause;
+      incident.metadata.rootCause = params.rootCause;
     }
 
     if (params.resolution !== undefined) {
-      incident.resolution = params.resolution;
+      incident.metadata.resolution = params.resolution;
     }
 
     incident.updatedAt = new Date();
 
     // Agregar evento al timeline
-    const eventDescription = params.notes || this.buildUpdateDescription(params);
+    const eventMessage = params.notes || this.buildUpdateDescription(params);
     incident.timeline.push({
       timestamp: new Date(),
-      action: params.status ? `STATUS_CHANGED_TO_${params.status.toUpperCase()}` : 'UPDATED',
-      description: eventDescription
+      type: params.status === IncidentStatus.RESOLVED ? 'resolved' :
+            params.status === IncidentStatus.CLOSED ? 'closed' :
+            params.status ? 'status_change' : 'update',
+      message: eventMessage
     });
 
     const updated = await this.incidentRepo.update(incident);
@@ -128,8 +135,8 @@ export class IncidentManagerService {
 
     incident.timeline.push({
       timestamp: new Date(),
-      action: 'CHECK_FAILED',
-      description: `Additional check failed: ${checkDetails.message || 'Service still down'}`
+      type: 'failed_check',
+      message: `Additional check failed: ${checkDetails.message || 'Service still down'}`
     });
 
     await this.incidentRepo.update(incident);
@@ -188,6 +195,19 @@ export class IncidentManagerService {
     const activeIncident = await this.findActiveByService(serviceId);
 
     if (activeIncident) {
+      // Calcular tiempo de resolución
+      const resolutionTimeMinutes = Math.floor(
+        (new Date().getTime() - activeIncident.createdAt.getTime()) / 60000
+      );
+
+      // Actualizar metadata con información de resolución
+      if (!activeIncident.metadata) {
+        activeIncident.metadata = {};
+      }
+      activeIncident.metadata.resolution = 'Automatic recovery detected by monitoring system';
+      activeIncident.resolutionTimeMinutes = resolutionTimeMinutes;
+
+      // Actualizar estado
       return await this.updateIncident(activeIncident.id, {
         status: IncidentStatus.RESOLVED,
         notes: 'Service automatically recovered. All health checks are now passing.',

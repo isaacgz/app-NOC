@@ -20,29 +20,36 @@ export enum IncidentSeverity {
 
 export interface IncidentEvent {
   timestamp: Date;
-  action: string;
-  description: string;
-  user?: string;
+  type: 'created' | 'status_change' | 'update' | 'resolved' | 'closed' | 'failed_check';
+  message: string;
+  metadata?: any;
+}
+
+export interface IncidentMetadata {
+  assignedTo?: string;
+  tags?: string[];
+  relatedIncidents?: string[];
+  rootCause?: string;
+  resolution?: string;
+  [key: string]: any;
 }
 
 export interface Incident {
   id: string;
   serviceId: string;
   serviceName: string;
-  title: string;
-  description: string;
   severity: IncidentSeverity;
   status: IncidentStatus;
+  description: string;
+  estimatedImpact?: string;
+  affectedChecks: number;
+  timeline: IncidentEvent[];
+  metadata?: IncidentMetadata;
   createdAt: Date;
   updatedAt: Date;
   resolvedAt?: Date;
   closedAt?: Date;
-  assignedTo?: string;
-  rootCause?: string;
-  resolution?: string;
-  affectedChecks: number;
-  estimatedImpact?: string;
-  timeline: IncidentEvent[];
+  resolutionTimeMinutes?: number;
 }
 
 export interface IncidentStatistics {

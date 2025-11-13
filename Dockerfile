@@ -14,10 +14,16 @@ COPY tsconfig.json ./
 # Install dependencies
 RUN npm ci
 
+# Copy Prisma schema
+COPY prisma ./prisma
+
+# Copy config files (needed for build)
+COPY config ./config
+
 # Copy source code
 COPY src ./src
 
-# Build TypeScript
+# Build TypeScript (includes Prisma generate)
 RUN npm run build
 
 # Stage 2: Production
