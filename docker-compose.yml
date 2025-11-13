@@ -70,6 +70,7 @@ services:
 
       # PostgreSQL
       DB_ENABLED: "true"
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/noc_monitoring?schema=public
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: noc_monitoring

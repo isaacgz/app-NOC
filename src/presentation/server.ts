@@ -16,6 +16,12 @@ import { LoadServicesConfig } from "../domain/use-cases/config/load-services-con
 import { LoadSLOsConfig } from "../domain/use-cases/config/load-slos-config";
 import { InfluxDBDataSource } from "../infrastructure/datasources/influxdb.datasource";
 import { MetricsStorageService } from "../domain/services/metrics-storage.service";
+import { PrismaService } from "../infrastructure/config/prisma.config";
+import { IncidentRepositoryPrisma } from "../infrastructure/repositories/incident.repository.prisma";
+import { SLORepositoryPrisma } from "../infrastructure/repositories/slo.repository.prisma";
+import { ServiceRepositoryPrisma } from "../infrastructure/repositories/service.repository.prisma";
+import { IncidentRepository } from "../domain/repository/incident.repository";
+import { SLORepository } from "../domain/repository/slo.repository";
 import * as dotenv from 'dotenv';
 
 // Cargar variables de entorno
@@ -90,13 +96,45 @@ export class Server {
             }
 
             // ============================================================
+            // FASE 7: Inicializar PostgreSQL (Prisma) - Opcional
+            // ============================================================
+            const dbEnabled = process.env.DB_ENABLED === 'true';
+            let incidentRepository: IncidentRepository;
+            let sloRepository: SLORepository;
+
+            if (dbEnabled) {
+                console.log('🐘 Initializing PostgreSQL Database (Prisma - Phase 7)...');
+
+                try {
+                    await PrismaService.connect();
+
+                    // Usar repositorios Prisma
+                    incidentRepository = new IncidentRepositoryPrisma();
+                    sloRepository = new SLORepositoryPrisma();
+
+                    console.log('✅ PostgreSQL connected - Using database persistence\n');
+                } catch (error) {
+                    console.warn('⚠️  Failed to connect to PostgreSQL, falling back to filesystem');
+                    console.warn(`   Error: ${error}`);
+                    console.warn('   Using JSON file storage instead\n');
+
+                    // Fallback a repositorios de filesystem
+                    incidentRepository = new IncidentRepositoryImpl();
+                    sloRepository = new SLORepositoryImpl();
+                }
+            } else {
+                console.log('📝 PostgreSQL disabled - Using filesystem storage');
+                console.log('   Set DB_ENABLED=true in .env to enable database persistence\n');
+
+                // Usar repositorios de filesystem
+                incidentRepository = new IncidentRepositoryImpl();
+                sloRepository = new SLORepositoryImpl();
+            }
+
+            // ============================================================
             // FASE 5: Inicializar Sistema de Incidentes y SLOs
             // ============================================================
             console.log('📋 Initializing Incident Management System (Phase 5)...');
-
-            // Repositorios
-            const incidentRepository = new IncidentRepositoryImpl();
-            const sloRepository = new SLORepositoryImpl();
 
             // Servicios (FASE 6: pasar metricsStorage a SLO calculator)
             this.incidentManager = new IncidentManagerService(incidentRepository);
@@ -266,10 +304,16 @@ export class Server {
     /**
      * Detener el servidor y todos los monitores
      */
-    public static stop(): void {
+    public static async stop(): Promise<void> {
         if (this.monitor) {
             this.monitor.stopAll();
         }
+
+        // Desconectar Prisma si está habilitado
+        if (process.env.DB_ENABLED === 'true') {
+            await PrismaService.disconnect();
+        }
+
         console.log('👋 NOC System stopped\n');
     }
 
