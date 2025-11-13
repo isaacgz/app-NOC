@@ -10,28 +10,28 @@ import { SLOEntity } from './slo.entity';
 @Entity('services')
 export class ServiceEntity {
     @PrimaryColumn({ type: 'varchar', length: 255 })
-    id: string;
+    id!: string;
 
     @Column({ type: 'varchar', length: 255 })
-    name: string;
+    name!: string;
 
     @Column({ type: 'text', nullable: true })
     description?: string;
 
     @Column({ type: 'varchar', length: 1024 })
-    url: string;
+    url!: string;
 
     @Column({ type: 'varchar', length: 50, default: 'http' })
-    method: string;
+    method!: string;
 
     @Column({ type: 'varchar', length: 255, default: '*/30 * * * * *' })
-    interval: string;
+    interval!: string;
 
     @Column({ type: 'boolean', default: false })
-    critical: boolean;
+    critical!: boolean;
 
     @Column({ type: 'boolean', default: true })
-    enabled: boolean;
+    enabled!: boolean;
 
     @Column({ type: 'simple-array', nullable: true })
     tags?: string[];
@@ -68,10 +68,10 @@ export class ServiceEntity {
 
     // Timestamps
     @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ name: 'updated_at' })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Column({ type: 'timestamp', nullable: true, name: 'last_check_at' })
     lastCheckAt?: Date;
