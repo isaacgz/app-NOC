@@ -14,10 +14,11 @@ COPY tsconfig.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy source code
+# Copy source code and Prisma schema
 COPY src ./src
+COPY prisma ./prisma
 
-# Build TypeScript
+# Generate Prisma Client and Build TypeScript
 RUN npm run build
 
 # Stage 2: Production
@@ -32,9 +33,17 @@ RUN npm ci --only=production
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 
+# Copy Prisma schema and generated client for migrations
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
 # Copy config files and public assets
 COPY config ./config
 COPY public ./public
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
 
 # Create directories
 RUN mkdir -p logs data
@@ -46,5 +55,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/api/overview', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); });"
 
-# Start application
-CMD ["node", "dist/app.js"]
+# Start application with entrypoint
+ENTRYPOINT ["./docker-entrypoint.sh"]
