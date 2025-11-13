@@ -9,31 +9,31 @@ import { ServiceEntity } from './service.entity';
 @Entity('slos')
 export class SLOEntity {
     @PrimaryColumn({ type: 'varchar', length: 255 })
-    id: string;
+    id!: string;
 
     @Column({ type: 'varchar', length: 255, name: 'service_id' })
-    serviceId: string;
+    serviceId!: string;
 
     @Column({ type: 'varchar', length: 255 })
-    name: string;
+    name!: string;
 
     @Column({ type: 'text', nullable: true })
     description?: string;
 
     @Column({ type: 'decimal', precision: 5, scale: 2 })
-    target: number;
+    target!: number;
 
     @Column({ type: 'varchar', length: 50 })
-    window: '1h' | '24h' | '7d' | '30d' | '90d';
+    window!: '1h' | '24h' | '7d' | '30d' | '90d';
 
     @Column({ type: 'varchar', length: 50, name: 'sli_type' })
-    sliType: 'availability' | 'latency' | 'errorRate';
+    sliType!: 'availability' | 'latency' | 'errorRate';
 
     @Column({ type: 'int', nullable: true })
     threshold?: number;
 
     @Column({ type: 'boolean', default: true })
-    enabled: boolean;
+    enabled!: boolean;
 
     // Estado actual del SLO (cache)
     @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, name: 'current_value' })
@@ -72,8 +72,8 @@ export class SLOEntity {
 
     // Timestamps
     @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ name: 'updated_at' })
-    updatedAt: Date;
+    updatedAt!: Date;
 }

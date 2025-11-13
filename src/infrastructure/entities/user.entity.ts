@@ -8,22 +8,22 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 @Entity('users')
 export class UserEntity {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column({ type: 'varchar', length: 255, unique: true })
-    email: string;
+    email!: string;
 
     @Column({ type: 'varchar', length: 255 })
-    name: string;
+    name!: string;
 
     @Column({ type: 'varchar', length: 255, select: false })
-    password: string;
+    password!: string;
 
     @Column({ type: 'varchar', length: 50, default: 'viewer' })
-    role: 'admin' | 'operator' | 'viewer';
+    role!: 'admin' | 'operator' | 'viewer';
 
     @Column({ type: 'boolean', default: true })
-    active: boolean;
+    active!: boolean;
 
     @Column({ type: 'jsonb', nullable: true })
     preferences?: {
@@ -37,10 +37,10 @@ export class UserEntity {
 
     // Timestamps
     @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ name: 'updated_at' })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Column({ type: 'timestamp', nullable: true, name: 'last_login_at' })
     lastLoginAt?: Date;

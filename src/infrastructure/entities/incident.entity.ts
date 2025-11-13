@@ -9,32 +9,32 @@ import { ServiceEntity } from './service.entity';
 @Entity('incidents')
 export class IncidentEntity {
     @PrimaryColumn({ type: 'varchar', length: 255 })
-    id: string;
+    id!: string;
 
     @Column({ type: 'varchar', length: 255, name: 'service_id' })
-    serviceId: string;
+    serviceId!: string;
 
     @Column({ type: 'varchar', length: 255, name: 'service_name' })
-    serviceName: string;
+    serviceName!: string;
 
     @Column({ type: 'varchar', length: 50 })
-    severity: 'critical' | 'high' | 'medium' | 'low';
+    severity!: 'critical' | 'high' | 'medium' | 'low';
 
     @Column({ type: 'varchar', length: 50 })
-    status: 'new' | 'investigating' | 'in_progress' | 'resolved' | 'closed';
+    status!: 'new' | 'investigating' | 'in_progress' | 'resolved' | 'closed';
 
     @Column({ type: 'text' })
-    description: string;
+    description!: string;
 
     @Column({ type: 'text', nullable: true, name: 'estimated_impact' })
     estimatedImpact?: string;
 
     @Column({ type: 'int', default: 0, name: 'affected_checks' })
-    affectedChecks: number;
+    affectedChecks!: number;
 
     // Timeline de eventos
     @Column({ type: 'jsonb', default: '[]' })
-    timeline: Array<{
+    timeline!: Array<{
         timestamp: Date;
         type: 'created' | 'status_change' | 'update' | 'resolved' | 'closed' | 'failed_check';
         message: string;
@@ -57,10 +57,10 @@ export class IncidentEntity {
 
     // Timestamps
     @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ name: 'updated_at' })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @Column({ type: 'timestamp', nullable: true, name: 'resolved_at' })
     resolvedAt?: Date;
