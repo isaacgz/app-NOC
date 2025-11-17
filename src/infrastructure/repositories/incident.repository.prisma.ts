@@ -1,7 +1,7 @@
 import { Incident, IncidentStatus, IncidentSeverity } from '../../domain/entities/incident.entity';
 import { IncidentRepository } from '../../domain/repository/incident.repository';
 import { prisma } from '../config/prisma.config';
-import { Severity, IncidentStatus as PrismaIncidentStatus } from '@prisma/client';
+import { Severity, IncidentStatus as PrismaIncidentStatus } from '../types/prisma-enums';
 
 /**
  * Incident Repository - Prisma Implementation
@@ -79,7 +79,7 @@ export class IncidentRepositoryPrisma implements IncidentRepository {
             orderBy: { createdAt: 'desc' },
         });
 
-        return incidents.map(i => this.mapPrismaToDomain(i));
+        return incidents.map((i: any) => this.mapPrismaToDomain(i));
     }
 
     /**
@@ -116,7 +116,7 @@ export class IncidentRepositoryPrisma implements IncidentRepository {
             orderBy: { createdAt: 'desc' },
         });
 
-        return incidents.map(i => this.mapPrismaToDomain(i));
+        return incidents.map((i: any) => this.mapPrismaToDomain(i));
     }
 
     /**
@@ -128,7 +128,7 @@ export class IncidentRepositoryPrisma implements IncidentRepository {
             orderBy: { createdAt: 'desc' },
         });
 
-        return incidents.map(i => this.mapPrismaToDomain(i));
+        return incidents.map((i: any) => this.mapPrismaToDomain(i));
     }
 
     /**
@@ -139,7 +139,7 @@ export class IncidentRepositoryPrisma implements IncidentRepository {
             orderBy: { createdAt: 'desc' },
         });
 
-        return incidents.map(i => this.mapPrismaToDomain(i));
+        return incidents.map((i: any) => this.mapPrismaToDomain(i));
     }
 
     /**
@@ -196,7 +196,7 @@ export class IncidentRepositoryPrisma implements IncidentRepository {
             low: 0,
         };
 
-        bySeverity.forEach(item => {
+        bySeverity.forEach((item: any) => {
             const severity = item.severity.toLowerCase() as keyof typeof severityCounts;
             severityCounts[severity] = item._count;
         });
@@ -238,7 +238,7 @@ export class IncidentRepositoryPrisma implements IncidentRepository {
             orderBy: { createdAt: 'desc' },
         });
 
-        return incidents.map(i => this.mapPrismaToDomain(i));
+        return incidents.map((i: any) => this.mapPrismaToDomain(i));
     }
 
     // ============================================================
