@@ -1,7 +1,7 @@
 import { SLO, SLOStatus, SLOWindow, SLIType } from '../../domain/entities/slo.entity';
 import { SLORepository } from '../../domain/repository/slo.repository';
 import { prisma } from '../config/prisma.config';
-import { SLOWindow as PrismaSLOWindow, SLIType as PrismaSLIType, ViolationRisk } from '@prisma/client';
+import { SLOWindow as PrismaSLOWindow, SLIType as PrismaSLIType, ViolationRisk } from '../types/prisma-enums';
 
 /**
  * SLO Repository - Prisma Implementation
@@ -75,7 +75,7 @@ export class SLORepositoryPrisma implements SLORepository {
             orderBy: { name: 'asc' },
         });
 
-        return slos.map(s => this.mapPrismaToDomain(s));
+        return slos.map((s: any) => this.mapPrismaToDomain(s));
     }
 
     /**
@@ -87,7 +87,7 @@ export class SLORepositoryPrisma implements SLORepository {
             orderBy: { name: 'asc' },
         });
 
-        return slos.map(s => this.mapPrismaToDomain(s));
+        return slos.map((s: any) => this.mapPrismaToDomain(s));
     }
 
     /**
@@ -98,7 +98,7 @@ export class SLORepositoryPrisma implements SLORepository {
             orderBy: { name: 'asc' },
         });
 
-        return slos.map(s => this.mapPrismaToDomain(s));
+        return slos.map((s: any) => this.mapPrismaToDomain(s));
     }
 
     /**
@@ -190,7 +190,7 @@ export class SLORepositoryPrisma implements SLORepository {
             take: limit,
         });
 
-        return statuses.map(s => this.mapPrismaStatusToDomain(s));
+        return statuses.map((s: any) => this.mapPrismaStatusToDomain(s));
     }
 
     // ============================================================

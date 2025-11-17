@@ -78,7 +78,7 @@ export class ServiceRepositoryPrisma implements ServiceRepository {
             orderBy: { name: 'asc' },
         });
 
-        return services.map(s => this.mapPrismaToDomain(s));
+        return services.map((s: any) => this.mapPrismaToDomain(s));
     }
 
     /**
@@ -90,7 +90,7 @@ export class ServiceRepositoryPrisma implements ServiceRepository {
             orderBy: { name: 'asc' },
         });
 
-        return services.map(s => this.mapPrismaToDomain(s));
+        return services.map((s: any) => this.mapPrismaToDomain(s));
     }
 
     /**
@@ -106,7 +106,7 @@ export class ServiceRepositoryPrisma implements ServiceRepository {
             orderBy: { name: 'asc' },
         });
 
-        return services.map(s => this.mapPrismaToDomain(s));
+        return services.map((s: any) => this.mapPrismaToDomain(s));
     }
 
     /**
@@ -117,7 +117,7 @@ export class ServiceRepositoryPrisma implements ServiceRepository {
             orderBy: { name: 'asc' },
         });
 
-        return services.map(s => this.mapPrismaToDomain(s));
+        return services.map((s: any) => this.mapPrismaToDomain(s));
     }
 
     /**
